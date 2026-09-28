@@ -1,6 +1,6 @@
 # H-TECHIN 509 — 2026
 
-- [Week 1: setup, lesson, assignment, and studio](week-1/README.md)
+- [Week 1: setup, lesson, and studio](week-1/README.md)
 - [Shared chatbot starter](rag-starter/README.md)
 
 Clone the whole repository so notebooks can find the shared code:

@@ -2,7 +2,6 @@
 
 - **Zoom:** [lesson notebook](HMSTI_509_M1_Lesson.ipynb).
 - **In person:** [studio instructions](studio/README.md).
-- **Assignment:** [instructions](ASSIGNMENT.md) and [checklist notebook](HMSTI_509_M1_Assignment.ipynb).
 
 ## Setup
 
@@ -36,7 +35,7 @@ python scripts/check_env.py
 
 In VS Code, open the lesson notebook and select `rag-starter/.venv/bin/python`
 (Windows: `rag-starter/.venv/Scripts/python.exe`) as the kernel. Run cells from the top.
-The notebooks locate `rag-starter` in this checkout. Week 1 needs no model API key.
+The notebook locates `rag-starter` in this checkout. Week 1 needs no model API key.
 
 The health check and studio Arena need only Python 3.10+, so you can use them even
 if notebook installation is blocked. See [setup troubleshooting](../rag-starter/SETUP_TROUBLESHOOTING.md).
