@@ -1,0 +1,25 @@
+# SECRETS — never commit these
+.env
+*.key
+secrets.*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Vector store (rebuild it locally with: python -m ribot.build_index)
+.chroma/
+chroma/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Your private documents — keep real/PII data OUT of the repo
+data/my_docs/

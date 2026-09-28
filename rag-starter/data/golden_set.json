@@ -1,0 +1,165 @@
+{
+  "description": "Week 9 shared golden set for the two corpora that ship with rag-starter. It exists so the ablation in Module 9 has comparable numbers across the cohort, and so a thin Week-6 golden set never blocks Week 9. YOUR OWN golden set over YOUR OWN documents is still the one that matters -- this is the reference, not the replacement.",
+  "how_to_read_an_entry": {
+    "corpus": "which folder under data/ to index before asking this question",
+    "history": "earlier USER turns, oldest first. Non-empty means this is a follow-up.",
+    "question": "what the user actually types this turn",
+    "expected_source": "the file that can answer it; null means nothing in the corpus can",
+    "expected_snippet": "text that must appear in a retrieved chunk for the answer to be grounded; null for out-of-corpus questions",
+    "kind": "plain | follow-up | identifier | out-of-corpus"
+  },
+  "questions": [
+    {
+      "id": "hc-reset",
+      "corpus": "sample_docs",
+      "kind": "plain",
+      "history": [],
+      "question": "How long is a password reset link valid?",
+      "expected_source": "help_center.md",
+      "expected_snippet": "valid for 30 minutes"
+    },
+    {
+      "id": "hr-accrual",
+      "corpus": "sample_docs",
+      "kind": "plain",
+      "history": [],
+      "question": "How many vacation days do employees accrue after two years?",
+      "expected_source": "hr_policy.md",
+      "expected_snippet": "20 days"
+    },
+    {
+      "id": "pf-business",
+      "corpus": "sample_docs",
+      "kind": "plain",
+      "history": [],
+      "question": "What does the Business plan add?",
+      "expected_source": "product_faq.md",
+      "expected_snippet": "single sign-on (SSO) and audit logs"
+    },
+    {
+      "id": "hr-expense",
+      "corpus": "sample_docs",
+      "kind": "plain",
+      "history": [],
+      "question": "When must expenses be submitted?",
+      "expected_source": "hr_policy.md",
+      "expected_snippet": "within 30 days"
+    },
+    {
+      "id": "hr-carryover-fu",
+      "corpus": "sample_docs",
+      "kind": "follow-up",
+      "history": [
+        "What is the vacation carryover limit?"
+      ],
+      "question": "Can those roll over?",
+      "expected_source": "hr_policy.md",
+      "expected_snippet": "maximum of 5 unused days"
+    },
+    {
+      "id": "hr-after-fu",
+      "corpus": "sample_docs",
+      "kind": "follow-up",
+      "history": [
+        "How many vacation days do I accrue in my first two years?"
+      ],
+      "question": "How many after that?",
+      "expected_source": "hr_policy.md",
+      "expected_snippet": "20 days"
+    },
+    {
+      "id": "pf-trash-fu",
+      "corpus": "sample_docs",
+      "kind": "follow-up",
+      "history": [
+        "Where do deleted projects go?"
+      ],
+      "question": "For how long?",
+      "expected_source": "product_faq.md",
+      "expected_snippet": "trash for 30 days"
+    },
+    {
+      "id": "hr-parental-oob",
+      "corpus": "sample_docs",
+      "kind": "out-of-corpus",
+      "history": [],
+      "question": "What is the parental leave policy?",
+      "expected_source": null,
+      "expected_snippet": null
+    },
+    {
+      "id": "spec-breakaway",
+      "corpus": "sample_docs_engineering",
+      "kind": "plain",
+      "history": [],
+      "question": "What is the maximum breakaway torque for the drive shaft?",
+      "expected_source": "spec_widget_assembly.md",
+      "expected_snippet": "not exceeding 0.4 N"
+    },
+    {
+      "id": "spec-bore",
+      "corpus": "sample_docs_engineering",
+      "kind": "plain",
+      "history": [],
+      "question": "What is the specified housing bore diameter?",
+      "expected_source": "spec_widget_assembly.md",
+      "expected_snippet": "25.00 mm"
+    },
+    {
+      "id": "wi-clip-safety",
+      "corpus": "sample_docs_engineering",
+      "kind": "plain",
+      "history": [],
+      "question": "What safety equipment is required when installing the retention clip?",
+      "expected_source": "work_instruction_wi-204.md",
+      "expected_snippet": "safety glasses"
+    },
+    {
+      "id": "ncr-2031-id",
+      "corpus": "sample_docs_engineering",
+      "kind": "identifier",
+      "history": [],
+      "question": "What was the finding on NCR-2031?",
+      "expected_source": "ncr_log.md",
+      "expected_snippet": "0.9 N"
+    },
+    {
+      "id": "ncr-lube-id",
+      "corpus": "sample_docs_engineering",
+      "kind": "identifier",
+      "history": [],
+      "question": "Which NCR was caused by a lubricant substitution?",
+      "expected_source": "ncr_log.md",
+      "expected_snippet": "Lubricant substitution"
+    },
+    {
+      "id": "ncr-fix118-id",
+      "corpus": "sample_docs_engineering",
+      "kind": "identifier",
+      "history": [],
+      "question": "Which NCR involved a worn locating pin on FIX-118?",
+      "expected_source": "ncr_log.md",
+      "expected_snippet": "FIX-118 locating pin worn"
+    },
+    {
+      "id": "wi-press-fu",
+      "corpus": "sample_docs_engineering",
+      "kind": "follow-up",
+      "history": [
+        "What does WI-204 say about pressing the shaft?"
+      ],
+      "question": "What if it stops early?",
+      "expected_source": "work_instruction_wi-204.md",
+      "expected_snippet": "sudden stop before full depth means misalignment"
+    },
+    {
+      "id": "eng-wa9-oob",
+      "corpus": "sample_docs_engineering",
+      "kind": "out-of-corpus",
+      "history": [],
+      "question": "What is the proof torque for the WA-9 assembly?",
+      "expected_source": null,
+      "expected_snippet": null
+    }
+  ]
+}

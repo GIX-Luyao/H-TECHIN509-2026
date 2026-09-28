@@ -1,0 +1,57 @@
+{
+  "note": "One complete structured tool-calling exchange (Anthropic-style), captured as data. Week 8's SEARCH: text protocol does the exact same dance — see tool_call_transcript.md for the part-by-part annotation.",
+  "exchange": [
+    {
+      "label": "1_request",
+      "body": {
+        "model": "claude-opus-4-8",
+        "max_tokens": 1024,
+        "tools": [
+          {
+            "name": "search_docs",
+            "description": "Search the indexed documents. Returns the top-k most relevant chunks with their source filenames.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "query": { "type": "string", "description": "What to look up" },
+                "k": { "type": "integer", "description": "How many chunks to return" }
+              },
+              "required": ["query"]
+            }
+          }
+        ],
+        "messages": [
+          { "role": "user", "content": "How do I reset my password?" }
+        ]
+      }
+    },
+    {
+      "label": "2_assistant_tool_use",
+      "body": {
+        "role": "assistant",
+        "stop_reason": "tool_use",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "toolu_01AbCdEf",
+            "name": "search_docs",
+            "input": { "query": "password reset", "k": 3 }
+          }
+        ]
+      }
+    },
+    {
+      "label": "3_tool_result",
+      "body": {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "toolu_01AbCdEf",
+            "content": "[help_center.md] To reset your password, open Settings > Account > Reset password and follow the link emailed to you. The link expires after 30 minutes."
+          }
+        ]
+      }
+    }
+  ]
+}

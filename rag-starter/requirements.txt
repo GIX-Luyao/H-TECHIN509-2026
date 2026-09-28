@@ -1,0 +1,20 @@
+# Core (needed from Week 5 onward if you use a real API key)
+openai>=1.40
+python-dotenv>=1.0
+
+# Week 5+: numerical computing (the "real" vector path; the course also shows pure Python)
+numpy>=1.26
+
+# Week 6+: vector store
+chromadb>=0.5
+
+# Week 9+: web UI + deployment
+streamlit>=1.36
+
+# Week 7: testing
+pytest>=8.0
+
+# Notes:
+# - Weeks 1-4 need NONE of these except python-dotenv; the bot runs offline via FakeLLM.
+# - If an install is blocked on a corporate laptop, you can still complete the logic
+#   exercises offline. Ask the instructor about the Colab fallback.
