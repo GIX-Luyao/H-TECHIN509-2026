@@ -1,60 +1,89 @@
-# Week 3 — Brownfield Rescue Mission
+# Week 3 in-person session — Fix the Forgetful Bot, by Pull Request
 
-**Understand, diagnose, and safely fix unfamiliar assistant code.**
+You work in pairs on one shared GitHub repository, each on your own laptop. Everything you
+need is Week 1 Git, Week 2 strings, and Week 3 lists of dicts. No API key. Synthetic data only.
 
-You have inherited an assistant. Its original engineer has left, a user reports an incorrect response, and its README is out of date. Your job is to understand the system before changing it, then produce a small, defensible repair.
+Bring: your laptop, GitHub login, and the `rag-starter` environment that ran `python -m ribot.chatbot`.
 
+## Session order
 
-## Session route
+1. Clinic and setup
+2. Trace the incident
+3. Fix issues by pull request
+4. Cross-pair bug hunt
+5. Memory policy
+6. Demos and live check
+7. Push and log
 
-| Time | Activity | Evidence |
-|---|---|---|
-| 0:00–0:10 | Read the [incident brief](rescue/INCIDENT.md), assign roles, define success | Expected behavior and initial prediction |
-| 0:10–0:30 | Understand: inspect the inherited files without editing | Architecture/data-flow sketch |
-| 0:30–0:55 | Diagnose: reproduce, trace, and test a hypothesis | Baseline output and history trace |
-| 0:55–1:15 | Fix: make the smallest safe change and verify | Reviewed diff and regression evidence |
-| 1:15–1:25 | Break, rotate roles, then open the [constraint reveal](rescue/REVEAL.md) | Revised acceptance checks |
-| 1:25–1:45 | Attack the repair and decide the memory policy | Boundary-case record |
-| 1:45–2:05 | Exchange repairs for peer review; reproduce a partner’s checks and challenge the diff | Independent verification and review notes |
-| 2:05–2:25 | Demo and cross-examination | Before/after behavior, limitation, repair decision |
-| 2:25–2:30 | Log, review, and commit | Agent Engineering Log and shipped/blocked line |
+## 1. Clinic and setup
 
-## 1. Set up the case
+Form pairs. Then **one partner**:
 
-Copy the entire [rescue folder](rescue/) into `exercises/week3-rescue/` in your own repository. Keep the packet files together. Do not replace your working `ribot/` application with this deliberately broken exercise or initialize a nested repository.
+1. Creates a new GitHub repository named `week3-memory-bot` (private is fine).
+2. Copies the [memory-bot](memory-bot/) folder into it, commits, pushes.
+3. Adds the partner as a collaborator (Settings → Collaborators).
 
-From the copied folder:
+**Both partners** clone it, then from the `memory-bot` folder run:
 
 ```text
-python -m unittest -v
-python assistant.py
+python bot.py
+python -m pytest
 ```
 
-The starting suite has **7 passes and 1 intentional failure**. Save the output before editing. Read [INCIDENT.md](rescue/INCIDENT.md) for the current behavior contract; the inherited [README](rescue/README.md) is evidence to check, not an authoritative specification.
+Expect **5 passed, 4 failed**. Read [memory-bot/README.md](memory-bot/README.md) together.
 
-## 2. Understand, diagnose, then repair
+## 2. Trace the incident
 
-Follow the [investigation guide](investigation.md). Copy [RESCUE_RECORD.md](templates/RESCUE_RECORD.md) to `docs/WEEK3_RESCUE_RECORD.md`. Draw the data flow and record a hypothesis before making changes. Keep supplied checks intact; add your own checks in a separate `test_*.py` file.
+Partner A runs `python bot.py` and types the four lines in [docs/TRACE.md](memory-bot/docs/TRACE.md).
+Partner B runs `python -m pytest` and reads the first failing test, top to bottom.
 
-Team roles:
+Fill in `docs/TRACE.md` together: predict the history after each line, then check with `/show`.
+Find the one line of code that explains why the name is stored but not recalled. Commit the
+trace to `main`.
 
-- **Incident lead:** maintains the timeline, hypothesis, and acceptance criteria, traces dictionaries, lists, branches, and evidence.
-- **Agent navigator:** requests explanations and targeted searches; reviews every suggestion.
+## 3. Fix issues by pull request
 
-Rotate roles at the reveal. 
+For each of the three issues in the memory-bot README, one partner fixes, the other reviews.
+Swap roles after each issue.
 
-**AI use:** Record assistance in your Agent Engineering Log. An unavailable agent should not block the mission.
+**Fixer**: Make the smallest change. Run `python -m pytest`. Commit, push, open a pull request on GitHub.
 
-## 3. Reveal, challenge, and review
+**Reviewer** reviews on your own laptop.
+Read the diff on GitHub. Approve if the red test is green and nothing else broke; otherwise
+request changes and say what to change. Merge. Both partners `git checkout main` and `git pull`.
 
-Open [REVEAL.md](rescue/REVEAL.md) only after the first repair attempt or supported diagnosis. Complete the memory-policy and boundary sections of your rescue record. Exchange your repair with another pair: have them reproduce your checks, inspect the diff.
+Do not edit the supplied tests. You may ask agent to explain 
+an error message.
 
-## 4. Demo and hand off
+## 4 (Optional). Cross-pair bug hunt
 
-Without AI, walk through the exact list passed to the reply backend. Explain your memory policy, one boundary limitation, and why your repair is the smallest safe change. 
+Swap with another pair. Each pair clones the other pair's repository and follows
+[bug-menu.md](bug-menu.md): plant one bug on a branch, open a pull request titled `memory change`. You may need to be added as a collaborator to the repo.
 
-Use the [Git checklist](GIT_CHECKLIST.md). Before leaving, commit:
+Review the pull request you receive: run the tests on the branch, read the diff, and write
+one review comment naming the bug, the symptom a user would see, and the test that catches it
+(or the test you would add). Request changes. Do not merge.
 
-- `exercises/week3-rescue/`: your minimal repair or documented attempt, supplied checks, and added regression checks.
-- `docs/WEEK3_RESCUE_RECORD.md`: architecture sketch, hypothesis–test–change–verification record, memory policy, boundary cases, and demo note.
-- A Week 3 entry in `docs/AGENT_ENGINEERING_LOG.md` using the [template](templates/AGENT_ENGINEERING_LOG.md).
+## 5. Memory policy
+
+Back in your own pair repository, open [docs/MEMORY_POLICY.md](memory-bot/docs/MEMORY_POLICY.md).
+
+One partner writes the policy: what `request_messages()` sends when the conversation is long,
+and the exact conversation that will then go wrong. The other partner copies the test template
+into `tests/test_memory.py` and fills in the number.
+
+Floor: the policy written and the test committed, red or green.
+
+## 6. Push and log
+
+Complete the Week 3 entry from [templates/AGENT_ENGINEERING_LOG.md](templates/AGENT_ENGINEERING_LOG.md)
+to `docs/AGENT_ENGINEERING_LOG.md`, including the pair repository URL. Push your repo to remote. **If your repo is private, please add your instructor to it for access.**
+
+## Before you leave
+
+The pair repository contains:
+
+- Issues 1 to 3 merged through pull requests, `python -m pytest` green on `main`.
+- `docs/TRACE.md` filled in.
+- (Optional). One review comment on another pair's `memory change` pull request.
+- `docs/MEMORY_POLICY.md` plus the policy test.

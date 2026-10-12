@@ -1,0 +1,9 @@
+_archive_rescue/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.DS_Store
+.ipynb_checkpoints/
+.venv/
+venv/
+.env
