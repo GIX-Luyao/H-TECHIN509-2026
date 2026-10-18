@@ -63,7 +63,11 @@ The last question exposes a limitation of the word-count model; do not fix it as
 
 ### Independently propose
 
-Each student opens their own copy of the unchanged starter with the same agreed `AGENTS.md`. Each student independently work with your agent to propose a plan to refactor the codebase. An example prompt is given below:
+Each student opens their own copy of the unchanged starter with the same agreed `AGENTS.md`. 
+Ask an agent to explain the functionality of `search.py`. Alternatively, you can read the file yourself without using agents.
+Based on your understanding of the functionality, think about how to refactor the code using functions. Be specific about the input and output of each function.
+
+Then each student independently works with your agent to propose a plan to refactor the codebase. An example prompt is given below:
 
 > Do not edit any files. Propose at most two small function extractions that remove repeated code. For each function, identify its name, inputs, return value, and places it will be called. Preserve behavior, public interfaces, data, and return shapes. Do not add dependencies or features. 
 > Do not change evaluate.py, eval_cases.json, or baseline.json. Wait for our agreement.
@@ -72,7 +76,9 @@ Feel free to modify the prompt accordingly. Please pay attention to the boundari
 
 ### Compare and agree
 
-Each student explains their proposal; Compare repeated code, function inputs/outputs, and how easy each plan is to explain. 
+First compare your own proposed functions with your agent's output. Refine either to get your refactor proposal. 
+
+Then each student explains their proposal; Compare repeated code, function inputs/outputs, and how easy each plan is to explain.
 Record one agreed plan in `TEAM_NOTES.md`; it may combine the proposals. You can leverage another agent to judge/explain proposals.
 
 ### Execute together
