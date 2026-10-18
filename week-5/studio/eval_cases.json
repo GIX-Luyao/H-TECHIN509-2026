@@ -1,0 +1,32 @@
+[
+  {
+    "id": "q1",
+    "question": "How do I reset my password?",
+    "expected": "password"
+  },
+  {
+    "id": "q2",
+    "question": "Where is my account?",
+    "expected": "password"
+  },
+  {
+    "id": "q3",
+    "question": "Submit travel expenses?",
+    "expected": "expenses"
+  },
+  {
+    "id": "q4",
+    "question": "Where do I send my receipt?",
+    "expected": "expenses"
+  },
+  {
+    "id": "q5",
+    "question": "Request vacation leave?",
+    "expected": "leave"
+  },
+  {
+    "id": "q6",
+    "question": "I need time off",
+    "expected": "leave"
+  }
+]
