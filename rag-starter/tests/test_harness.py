@@ -37,8 +37,9 @@ def test_unknown_tool_becomes_a_readable_tool_result(tools):
     block = reply["content"][0]
     assert block["type"] == "tool_use"
     # The harness must survive a request for a tool that isn't registered.
-    answer = run_harness_with_forced_block(tools, block)
-    assert "Unknown tool" in answer
+    result = run_harness_with_forced_block(tools, block)
+    assert result.is_error
+    assert "Unknown tool" in result.content
 
 
 def run_harness_with_forced_block(tools, block):
@@ -54,7 +55,20 @@ def test_bad_arguments_become_a_readable_tool_result(tools):
 
     registry = {tool.name: tool for tool in tools}
     bad_block = {"name": "list_sources", "id": "toolu_x", "input": {"bogus": 1}}
-    assert "Bad arguments" in _dispatch(registry, bad_block)
+    result = _dispatch(registry, bad_block)
+    assert result.is_error
+    assert "Bad arguments" in result.content
+
+
+def test_failed_tool_marks_its_result_block_as_an_error():
+    from ribot.harness import _tool_result_block
+    from ribot.tools import ToolResult
+
+    block = {"id": "toolu_x", "name": "search_docs"}
+    failed = _tool_result_block(block, ToolResult("boom", is_error=True))
+    worked = _tool_result_block(block, ToolResult("ok"))
+    assert failed["is_error"] is True and failed["tool_use_id"] == "toolu_x"
+    assert "is_error" not in worked
 
 
 def test_cap_always_terminates(monkeypatch):

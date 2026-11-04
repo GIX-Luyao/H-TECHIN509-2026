@@ -1,0 +1,75 @@
+{
+  "description": "Behavior test cases for the assistant agent, written for the synthetic sample corpus in data/sample_docs/. Retrieval tests (golden_set.json) ask 'did search find the right chunk?'. These ask 'did the agent DO the right thing?': call the right tool, call no tool when none is needed, and refuse when the documents can't answer. Replace or extend them for your own corpus.",
+  "how_to_read_a_case": {
+    "question": "What the user types.",
+    "expect_tool": "A tool name that must be called, or \"none\" (no tool may be called), or null (don't check tools).",
+    "expect_refusal": "true if the right answer is an honest 'I don't know'.",
+    "needs_real_model": "true if only a real model can pass it. The offline FakeToolLLM is scripted, so these cases are skipped offline.",
+    "note": "Why this case exists."
+  },
+  "cases": [
+    {
+      "question": "How do I reset my password?",
+      "expect_tool": "search_docs",
+      "expect_refusal": false,
+      "needs_real_model": false,
+      "note": "A plain factual question must go to search."
+    },
+    {
+      "question": "What is the vacation carryover limit?",
+      "expect_tool": "search_docs",
+      "expect_refusal": false,
+      "needs_real_model": false,
+      "note": "Factual question in a different document."
+    },
+    {
+      "question": "How much does the Business plan cost?",
+      "expect_tool": "search_docs",
+      "expect_refusal": false,
+      "needs_real_model": false,
+      "note": "Factual question in a third document."
+    },
+    {
+      "question": "Which documents do you have?",
+      "expect_tool": "list_sources",
+      "expect_refusal": false,
+      "needs_real_model": false,
+      "note": "A question about the library itself needs the second tool."
+    },
+    {
+      "question": "Recommend a good pizza recipe",
+      "expect_tool": null,
+      "expect_refusal": true,
+      "needs_real_model": false,
+      "note": "Out of scope: the documents can't answer, so the honest answer is 'I don't know'."
+    },
+    {
+      "question": "What is the capital of France?",
+      "expect_tool": null,
+      "expect_refusal": true,
+      "needs_real_model": false,
+      "note": "A real model knows this, but the assistant is grounded: it should not answer from world knowledge."
+    },
+    {
+      "question": "Thanks, that's all for now!",
+      "expect_tool": "none",
+      "expect_refusal": false,
+      "needs_real_model": true,
+      "note": "Small talk needs no tool. Calling search here wastes a step."
+    },
+    {
+      "question": "What's today's date?",
+      "expect_tool": "current_date",
+      "expect_refusal": false,
+      "needs_real_model": true,
+      "note": "The model cannot know the date; it must use the example tool from my_tools.py."
+    },
+    {
+      "question": "Please remember that I prefer short bullet-point answers.",
+      "expect_tool": "remember",
+      "expect_refusal": false,
+      "needs_real_model": true,
+      "note": "An explicit request to remember. The eval always declines the confirmation, so nothing is written."
+    }
+  ]
+}

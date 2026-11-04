@@ -2,15 +2,20 @@
 
 - Week 1: run it and watch it reply (offline FakeLLM works with no key).
 - Week 3: the conversation 'memory' is just `self.history`, a list of {role, content} dicts.
-- Week 7: this is refactored into a class with tests.
+- Week 7: this is refactored into a class with tests, and memory gets managed:
+  `trim_history()` keeps the window the model sees under a size limit, the logger keeps
+  the full record, and `resume()` loads a saved session into a new bot.
 """
 
 from __future__ import annotations
+
+import json
 
 from .llm import chat
 from .textprep import export_to_json
 
 DEFAULT_SYSTEM = "You are a helpful, concise assistant for HMSTI 509 students."
+DEFAULT_MAX_MESSAGES = 20  # working-memory limit; the system prompt is extra
 
 
 class ConversationLogger:
@@ -27,16 +32,32 @@ class ConversationLogger:
 
 
 class ChatBot:
-    """A multi-turn chatbot whose memory is a list of message dicts."""
+    """A multi-turn chatbot with a size-limited working memory and a full session log."""
 
-    def __init__(self, system_prompt: str = DEFAULT_SYSTEM) -> None:
+    ALLOWED_ROLES = ("user", "assistant")  # roles a saved session may contain
+
+    def __init__(
+        self, system_prompt: str = DEFAULT_SYSTEM, max_messages: int = DEFAULT_MAX_MESSAGES
+    ) -> None:
+        if max_messages < 0:
+            raise ValueError("max_messages must be 0 or more")
         self.history: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
         self.logger = ConversationLogger()
+        self.max_messages = max_messages
 
     def add_turn(self, role: str, content: str) -> None:
-        """Append one message to the conversation memory."""
+        """Append one message; the log keeps everything, history keeps the recent window."""
         self.history.append({"role": role, "content": content})
         self.logger.log(role, content)
+        self.trim_history()
+
+    def trim_history(self) -> None:
+        """Keep the system prompt plus the most recent `max_messages` messages."""
+        system = self.history[0]
+        rest = self.history[1:]
+        # Guard: rest[-0:] is the WHOLE list, so a limit of 0 needs its own case.
+        recent = rest[-self.max_messages :] if self.max_messages > 0 else []
+        self.history = [system] + recent
 
     def reply(self, user_message: str) -> str:
         """Add the user's message, ask the model, remember and return the answer."""
@@ -72,6 +93,25 @@ class ChatBot:
     def reset(self) -> None:
         """Forget everything except the system prompt."""
         self.history = self.history[:1]
+
+    def resume(self, filename: str) -> None:
+        """Load a saved session (a JSON list of {role, content} dicts) into this bot.
+
+        A saved file is outside data: every turn is checked before any is loaded, so a
+        bad file never half-loads, and "system" turns are refused so an edited file
+        can't slip new instructions into the bot.
+        """
+        with open(filename, encoding="utf-8") as f:
+            turns = json.load(f)
+        if not isinstance(turns, list):
+            raise ValueError(f"{filename} should hold a list of turns")
+        for turn in turns:
+            if not isinstance(turn, dict) or turn.get("role") not in self.ALLOWED_ROLES:
+                raise ValueError(f"not a saved user/assistant turn: {turn!r}")
+            if not isinstance(turn.get("content"), str):
+                raise ValueError(f"turn content must be text: {turn!r}")
+        for turn in turns:
+            self.add_turn(turn["role"], turn["content"])
 
 
 def main() -> None:
