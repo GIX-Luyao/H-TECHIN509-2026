@@ -6,7 +6,9 @@ parse the string. This module is the SAME loop wearing the grown-up envelope:
 - each tool is DECLARED as a JSON schema (name, description, typed arguments),
 - the model's request arrives as a typed `tool_use` block, not a magic string,
 - the result goes back as a `tool_result` turn tied to that block's id,
-- a registry maps tool names to your Python functions, so adding a tool is one entry.
+- a registry maps tool names to your Python functions, so adding a tool is one entry,
+- each tool is a `Tool` from `ribot/tools.py` (Week 7): `call()` checks the arguments
+  against the schema and turns every failure into an error result the model can read.
 
 These are exactly the shapes shipped in `data/tool_call_transcript.json` — now run by
 code instead of read as data. Offline, `chat_tools` answers via the deterministic
@@ -16,12 +18,12 @@ key the tool choice is genuinely the model's. The loop below never changes.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Callable
-
 from .build_index import build_index
 from .llm import ToolMessage, chat_tools
 from .retriever import Retriever
+from .tools import Tool, ToolResult
+
+__all__ = ["HARNESS_SYSTEM", "Tool", "ToolResult", "make_tools", "run_harness"]
 
 HARNESS_SYSTEM = (
     "You are a research assistant for the user's document library. Use the provided "
@@ -31,28 +33,11 @@ HARNESS_SYSTEM = (
 )
 
 
-@dataclass(frozen=True)
-class Tool:
-    """One tool = a schema the model sees + the Python function your loop runs."""
-
-    name: str
-    description: str
-    input_schema: dict
-    run: Callable[..., str]
-
-    def declaration(self) -> dict:
-        """The schema-only view sent to the model (it never sees `run`)."""
-        return {
-            "name": self.name,
-            "description": self.description,
-            "input_schema": self.input_schema,
-        }
-
-
 def make_tools(retriever: Retriever) -> list[Tool]:
     """The two-tool starter kit: search the docs, or list what's indexed.
 
-    Your assignment adds a tool of YOUR own here — one entry, no loop changes.
+    Your assignment adds a tool of YOUR own here (the one you designed in Week 7) —
+    one entry, no loop changes.
     """
     return [
         Tool(
@@ -106,30 +91,27 @@ def run_harness(question: str, tools: list[Tool], max_iters: int = 4) -> str:
 
         messages.append(reply)
         messages.append(
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "tool_result",
-                        "tool_use_id": block["id"],
-                        "content": _dispatch(registry, block),
-                    }
-                ],
-            }
+            {"role": "user", "content": [_tool_result_block(block, _dispatch(registry, block))]}
         )
 
     return "I couldn't finish within the step limit."
 
 
-def _dispatch(registry: dict[str, Tool], block: dict) -> str:
-    """Run the requested tool; turn every failure into text the model can read."""
-    tool = registry.get(block["name"])
+def _dispatch(registry: dict[str, Tool], block: dict) -> ToolResult:
+    """Run the requested tool; every failure becomes an error result, never a crash."""
+    tool = registry.get(block.get("name"))
     if tool is None:
-        return f"Unknown tool {block['name']!r}. Available tools: {sorted(registry)}."
-    try:
-        return tool.run(**block.get("input", {}))
-    except TypeError as err:
-        return f"Bad arguments for {block['name']!r}: {err}"
+        return ToolResult(
+            f"Unknown tool {block.get('name')!r}. Available tools: {sorted(registry)}.",
+            is_error=True,
+        )
+    return tool.call(block.get("input", {}))
+
+
+def _tool_result_block(block: dict, result: ToolResult) -> dict:
+    """The tool_result turn tied to its tool_use id; `is_error` only when it failed."""
+    base = {"type": "tool_result", "tool_use_id": block["id"], "content": result.content}
+    return {**base, "is_error": True} if result.is_error else base
 
 
 def _first_tool_use(reply: ToolMessage) -> dict | None:

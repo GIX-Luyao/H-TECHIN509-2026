@@ -16,10 +16,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Sequence
 
-from .harness import Tool, _dispatch, _first_tool_use, _text_of
+from .harness import Tool, _dispatch, _first_tool_use, _text_of, _tool_result_block
 from .llm import ToolMessage
 from .memory import memory_block
 from .ollama_tools import chat_tools_routed
+from .tools import ToolResult
 
 ASSISTANT_SYSTEM = (
     "You are a personal work assistant for the user's document library.\n"
@@ -77,12 +78,16 @@ def build_messages(
     ]
 
 
-def _run_tool(registry: dict[str, Tool], block: dict) -> str:
-    """Like harness._dispatch, but a crashing tool also becomes text, not a crash."""
+def _run_tool(registry: dict[str, Tool], block: dict) -> ToolResult:
+    """harness._dispatch, plus a last-resort guard so nothing a tool does ends the loop.
+
+    `Tool.call()` already turns bad arguments and crashes into error results; this guard
+    catches anything that slips past it (for example, a malformed tool_use block).
+    """
     try:
-        return str(_dispatch(registry, block))
+        return _dispatch(registry, block)
     except Exception as err:  # noqa: BLE001 - any tool failure is reported to the model
-        return f"Tool {block.get('name')!r} failed: {err}"
+        return ToolResult(f"Tool {block.get('name')!r} failed: {err}", is_error=True)
 
 
 def run_harness_turn(
@@ -107,12 +112,10 @@ def run_harness_turn(
             return AgentTurn(_text_of(reply), tuple(steps), hit_cap=False)
 
         result = _run_tool(registry, block)
-        steps.append(ToolStep(block["name"], dict(block.get("input", {})), result))
-        tool_result = {
-            "type": "tool_result",
-            "tool_use_id": block["id"],
-            "content": result,
-        }
+        steps.append(
+            ToolStep(block["name"], dict(block.get("input", {})), result.content)
+        )
+        tool_result = _tool_result_block(block, result)
         messages = [*messages, reply, {"role": "user", "content": [tool_result]}]
 
     return AgentTurn(STEP_LIMIT_MESSAGE, tuple(steps), hit_cap=True)

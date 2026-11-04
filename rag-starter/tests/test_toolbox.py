@@ -90,3 +90,17 @@ def test_save_draft_declined_writes_nothing(retriever, tmp_path):
 def test_my_tools_example_runs():
     assert len(current_date()) == 10  # YYYY-MM-DD
     assert all(tool.declaration()["name"] for tool in MY_TOOLS)
+
+
+def test_action_tools_are_marked_as_changing_something(tmp_path):
+    from ribot.toolbox import make_assistant_tools
+
+    tools = {
+        t.name: t
+        for t in make_assistant_tools(
+            retriever=None, memory_path=tmp_path / "m.md", drafts_dir=tmp_path, extra=[]
+        )
+    }
+    assert tools["search_docs"].read_only and tools["list_sources"].read_only
+    assert not tools["remember"].read_only
+    assert not tools["save_draft"].read_only

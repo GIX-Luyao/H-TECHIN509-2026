@@ -149,6 +149,7 @@ def _action_tools(
                 f"save to memory: {note!r}",
                 lambda: _remember(memory_path, note),
             ),
+            read_only=False,
         ),
         Tool(
             name="save_draft",
@@ -170,6 +171,7 @@ def _action_tools(
                 f"write draft {title!r} ({len(body)} characters)",
                 lambda: _write_draft(drafts_dir, title, body),
             ),
+            read_only=False,
         ),
     ]
 
