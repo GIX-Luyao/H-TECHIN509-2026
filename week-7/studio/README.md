@@ -25,6 +25,10 @@ As Project Owner:
 
 Use the Week 7 notebook's class, memory, and `Tool` examples as starting points. Your studio feature should be small enough to implement in **about 60 minutes**.
 
+> **What good looks like.** The steps below include weak and strong examples. They all use one
+> made-up feature, an **office-hours lookup**: `find_office_hours(course, csv_path)` reads a small
+> CSV and returns the office-hours slot for a course. Use it to judge your own work; don't copy it as your feature.
+
 ## 3. Project Owner: choose a feature and define the tests first
 
 Choose **one** feature that helps your final-project assistant. For example:
@@ -47,6 +51,60 @@ As the owner, you should provide test sample data to your developer so that they
 
 Commit and push the tests and sample data to your project's default branch before the developer starts. Please clearly document your tests so that your developer is clear about which ones to run.
 
+<details>
+<summary><b>What good looks like: acceptance tests</b></summary>
+
+Sample data, `tests/data/office_hours_sample.csv` (synthetic):
+
+```text
+course,slot
+TECHIN 509,Tue 3:00-4:00 PM (Room 270)
+TECHIN 510,Thu 10:00-11:00 AM (Zoom)
+TECHIN 513,Mon 1:00-2:00 PM (Room 214)
+```
+
+**Weak**
+
+```python
+def test_office_hours():
+    result = find_office_hours("TECHIN 509")
+    assert result is not None
+```
+
+- It passes even if the function returns the wrong slot, or any string at all.
+- There is no edge case, so the developer has to guess what happens for an unknown course.
+- It doesn't say which data to use or how to run it.
+
+**Strong**
+
+```python
+"""Acceptance tests for the office-hours lookup (issue #3).
+
+Run:  python -m pytest tests/test_office_hours.py -v
+Data: tests/data/office_hours_sample.csv (synthetic)
+"""
+from pathlib import Path
+
+from ribot.office_hours import find_office_hours
+
+SAMPLE = Path(__file__).parent / "data" / "office_hours_sample.csv"
+
+
+def test_known_course_returns_its_slot():
+    assert find_office_hours("TECHIN 509", SAMPLE) == "Tue 3:00-4:00 PM (Room 270)"
+
+
+def test_unknown_course_returns_not_found_instead_of_raising():
+    assert find_office_hours("TECHIN 999", SAMPLE) == "Not found"
+```
+
+- Each test asserts an **exact** expected value taken from the sample data.
+- The test names state the behavior, so a failing test explains itself.
+- The edge case pins a decision the owner made: return `"Not found"` and don't raise.
+- The file header tells the developer what to run and which data it uses.
+
+</details>
+
 ## 4. Project Owner: communicate the requirements
 
 Create one GitHub issue in your repository. Keep it short; use this template:
@@ -60,6 +118,40 @@ Start here: [code file, sample data, and useful lesson example]
 Acceptance tests: [test file and exact command to run it]
 Out of scope: [what should remain unchanged]
 ```
+
+<details>
+<summary><b>What good looks like: the issue</b></summary>
+
+**Weak**
+
+```text
+Title: office hours
+
+Can you add office hours to my bot? Tests are in the repo. Thanks!
+```
+
+The developer has to guess the function name, the return value, what happens for an unknown
+course, which test to run, and where to stop.
+
+**Strong**
+
+```text
+Title: Add office-hours lookup
+
+Purpose: My assistant needs this to answer "when are office hours for TECHIN 509?"
+  from local data instead of guessing.
+Build: find_office_hours(course: str, csv_path) -> str in ribot/office_hours.py.
+  Returns the slot for an exact course match. Returns "Not found" for an
+  unknown course; never raises.
+Start here: tests/data/office_hours_sample.csv; Week 7 lesson, Tool section
+  (for context only).
+Acceptance tests: tests/test_office_hours.py
+  Run: python -m pytest tests/test_office_hours.py -v
+Out of scope: wrapping it as a Tool, the agent loop, fuzzy matching,
+  any change to chatbot.py.
+```
+
+</details>
 
 Show the developer the issue and walk through your two tests. Explain how the feature will help your final-project agent.
 
@@ -92,6 +184,44 @@ Change: [one sentence]
 Verification: [commands run and results]
 ```
 
+<details>
+<summary><b>What good looks like: the implementation and the PR</b></summary>
+
+**Weak implementation (hardcoded to the tests)**
+
+```python
+def find_office_hours(course, csv_path):
+    if course == "TECHIN 509":
+        return "Tue 3:00-4:00 PM (Room 270)"
+    return "Not found"
+```
+
+Both acceptance tests pass, but the function never reads the CSV. Any other course returns
+`"Not found"`. The owner's extra input in step 6 is there to catch this.
+
+**Weak PR description**
+
+```text
+Fixed it. Tests pass now.
+```
+
+**Strong PR description**
+
+```text
+Closes #3
+
+Change: Add find_office_hours() in ribot/office_hours.py; it reads the CSV and
+  returns the slot for an exact course match, or "Not found".
+Verification:
+  python -m pytest tests/test_office_hours.py -v  -> 2 passed
+  python -m pytest                                -> 14 passed (same as main before the change)
+```
+
+The strong version links the issue, so merging closes it. It says what changed in one sentence and
+gives the reviewer the exact commands to rerun, with results to compare against.
+
+</details>
+
 
 ## 6. Project Owner: run the tests and review the delivery
 
@@ -110,6 +240,38 @@ Leave a GitHub review:
 
 For example: "For an unknown ID, I expected `Not found`, but the function raises `KeyError`. Running the second acceptance test reproduces this."
 
+<details>
+<summary><b>What good looks like: the review</b></summary>
+
+**Weak approve:** `LGTM 👍`
+It doesn't say what you ran, so you may have approved code you never tested.
+
+**Weak request changes:** `Doesn't work for other courses, please fix.`
+It doesn't say which course, what you expected, or how to reproduce it, so the developer has to
+investigate from scratch.
+
+**Strong request changes** (this catches the hardcoded version above):
+
+```text
+Input:    find_office_hours("TECHIN 510", "tests/data/office_hours_sample.csv")
+Expected: "Thu 10:00-11:00 AM (Zoom)"  (row 3 of the sample CSV)
+Actual:   "Not found"
+Reproduce:
+  python -c "from ribot.office_hours import find_office_hours; print(find_office_hours('TECHIN 510', 'tests/data/office_hours_sample.csv'))"
+Both acceptance tests pass, but the function doesn't seem to read the CSV.
+```
+
+**Strong approve:**
+
+```text
+Ran python -m pytest tests/test_office_hours.py -v: 2 passed.
+Full suite: 14 passed, same as main before the PR.
+Extra input: "TECHIN 513" returned "Mon 1:00-2:00 PM (Room 214)", matching the CSV.
+I can follow the code and the CSV parsing. Approving.
+```
+
+</details>
+
 Evaluate the feature you agreed on. Put new feature ideas in a separate future issue rather than adding them to this delivery.
 
 ## 7. Developer: revise. Project Owner: accept and merge.
@@ -118,6 +280,29 @@ Evaluate the feature you agreed on. Put new feature ideas in a separate future i
 
 **Project Owner:** pull the updated branch, rerun the checks, and approve and merge when satisfied. Close the issue if GitHub has not already closed it. Return to your default branch and pull the merged result.
 
+
+## What a complete delivery looks like
+
+The instructor checks these items on GitHub. Your owner work is in your own repo. Your developer
+work is the PR you opened in your partner's repo.
+
+**As Project Owner (your repo)**
+
+- [ ] Tests and sample data are on the default branch, committed **before** the developer's PR.
+- [ ] At least one normal-case and one edge-case test, each asserting an exact expected value. The test file says how to run it.
+- [ ] Sample data is synthetic: no real names, emails, IDs, or secrets.
+- [ ] One issue that follows the template. Any clarification is added as an issue comment.
+- [ ] A review that says what you ran and which extra input you tried. A "Request changes" review gives input, expected result, actual result, and a reproduce command.
+- [ ] The PR is merged, the issue is closed, and no branch is deleted.
+
+**As Developer (your PR in your partner's repo)**
+
+- [ ] The PR description has `Closes #n`, a one-sentence change, and verification commands with their results.
+- [ ] The diff touches only the agreed feature. No assertion is weakened and no test is deleted without the owner's agreement in a comment.
+- [ ] No hardcoded test answers: the code works from the supplied data.
+- [ ] Review feedback is addressed with a new commit on the same branch, plus a short reply saying what changed.
+
+**Both:** `python -m pytest` passes on the default branch after the merge.
 
 ## Deliverables
 
