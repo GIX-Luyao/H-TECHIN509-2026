@@ -8,9 +8,6 @@ numpy>=1.26
 # Week 6+: vector store
 chromadb>=0.5
 
-# Week 9+: web UI + deployment
-streamlit>=1.36
-
 # Week 7: testing
 pytest>=8.0
 

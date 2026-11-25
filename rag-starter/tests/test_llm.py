@@ -139,3 +139,70 @@ def test_no_rewrite_marker_still_returns_prose(monkeypatch):
     reply = chat(MESSAGES)
     assert "offline demo reply" in reply
     assert "Earlier question" not in reply
+
+
+# --- Ollama thinking switch: off by default so a 2B model answers in seconds -----------
+
+
+def _capture_ollama_body(monkeypatch) -> dict:
+    """Fake a healthy Ollama server and record the JSON body each request sends."""
+    sent: dict = {}
+
+    class FakeResponse(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            self.close()
+
+    def fake_urlopen(request, timeout):
+        sent.update(json.loads(request.data.decode("utf-8")))
+        return FakeResponse(json.dumps({"message": {"content": "ok"}}).encode("utf-8"))
+
+    monkeypatch.setattr("ribot.llm.urllib.request.urlopen", fake_urlopen)
+    return sent
+
+
+def test_ollama_thinking_is_off_by_default(monkeypatch):
+    sent = _capture_ollama_body(monkeypatch)
+    OllamaLLM(model="qwen3.5:2b").chat(MESSAGES)
+    # Top level, not inside "options": that is where Ollama reads it.
+    assert sent["think"] is False
+    assert "think" not in sent["options"]
+
+
+def test_ollama_thinking_can_be_switched_on(monkeypatch):
+    sent = _capture_ollama_body(monkeypatch)
+    OllamaLLM(model="qwen3.5:2b", think=True).chat(MESSAGES)
+    assert sent["think"] is True
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("true", True),
+        ("1", True),
+        ("YES", True),
+        ("on", True),
+        ("false", False),
+        ("0", False),
+        ("", False),
+        ("maybe", False),
+    ],
+)
+def test_ollama_think_env_var_is_parsed(monkeypatch, value, expected):
+    from ribot.config import get_settings
+
+    monkeypatch.setenv("OLLAMA_THINK", value)
+    assert get_settings().ollama_think is expected
+
+
+def test_chat_passes_ollama_think_setting_through(monkeypatch):
+    sent = _capture_ollama_body(monkeypatch)
+    monkeypatch.setenv("RIBOT_LLM", "ollama")
+    chat(MESSAGES)
+    assert sent["think"] is False
+
+    monkeypatch.setenv("OLLAMA_THINK", "true")
+    chat(MESSAGES)
+    assert sent["think"] is True

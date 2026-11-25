@@ -88,9 +88,6 @@ these?" membership checks.
 
 ## Rare cameos (fine to just recognize)
 
-**Walrus `:=`** — `if prompt := st.chat_input():` assigns *and* tests in one step: "grab
-the input, and if it's non-empty…" (One appearance, in `app.py`.)
-
 **`next(...)` with a default** — `next((m for m in reversed(msgs) if ...), "")` means
 "the first match walking backwards, or `""` if none."
 

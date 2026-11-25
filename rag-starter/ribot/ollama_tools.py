@@ -1,15 +1,15 @@
-"""Week 10: tool calling with a LOCAL model served by Ollama.
+"""Week 8: tool calling with a small LOCAL model served by Ollama.
 
-`llm.chat_tools()` sends tools to an API model, or to the scripted FakeToolLLM offline.
-This module adds the third option: an Ollama model that genuinely chooses tools on your
+`llm.chat_tools()` sends tools to an API model, the scripted FakeToolLLM offline, or, with
+RIBOT_LLM=ollama, the class below: an Ollama model that genuinely chooses tools on your
 own machine, with no data leaving it. It speaks Ollama's native `/api/chat` tool format
 and converts to and from the same block shapes the harness uses, so the agent loop is
 identical whichever model is answering.
 
     RIBOT_LLM=ollama OLLAMA_MODEL=qwen3.5:2b python -m ribot.assistant
 
-Not every model supports tools: Ollama rejects tools for some (gemma3:1b, for example),
-and very small models that do support them often pick the wrong tool or none at all.
+Use a small tool-capable model: qwen3.5:2b (the default) or granite4:1b-h. Ollama rejects
+tools for some models (gemma3:1b, for example), and very small models that do support them often pick the wrong tool or none at all.
 That is worth measuring, not hiding: run `python -m ribot.agent_eval` per model.
 """
 
@@ -20,7 +20,7 @@ import urllib.error
 import urllib.request
 from typing import Sequence
 
-from .config import get_settings
+from .config import DEFAULT_OLLAMA_MODEL
 from .llm import ToolMessage, chat_tools
 
 
@@ -105,15 +105,17 @@ class OllamaToolLLM:
 
     def __init__(
         self,
-        model: str = "llama3.2",
+        model: str = DEFAULT_OLLAMA_MODEL,
         host: str = "http://localhost:11434",
         temperature: float = 0.2,
         timeout: float = 120.0,
+        think: bool = False,
     ) -> None:
         self.model = model
         self.host = host.rstrip("/")
         self.temperature = temperature
         self.timeout = timeout
+        self.think = think  # False = answer directly, no reasoning pass
 
     def chat_tools(
         self, messages: Sequence[ToolMessage], tools: Sequence[dict]
@@ -133,6 +135,7 @@ class OllamaToolLLM:
                 for t in tools
             ],
             "stream": False,
+            "think": self.think,  # top level, not in options
             "options": {"temperature": self.temperature},
         }
         return from_ollama_reply(self._post(payload), turn=len(list(messages)))
@@ -152,7 +155,7 @@ class OllamaToolLLM:
             raise RuntimeError(
                 f"Ollama refused the request for {self.model!r} ({err.code}): {detail}. "
                 "If it says the model does not support tools, pick a tool-capable model "
-                "(for example a qwen3.5 or granite4 model) with OLLAMA_MODEL=..."
+                "such as qwen3.5:2b or granite4:1b-h with OLLAMA_MODEL=..."
             ) from err
         except (urllib.error.URLError, OSError) as err:
             raise RuntimeError(
@@ -164,10 +167,5 @@ class OllamaToolLLM:
 def chat_tools_routed(
     messages: Sequence[ToolMessage], tools: Sequence[dict]
 ) -> ToolMessage:
-    """Ollama when RIBOT_LLM=ollama; otherwise `llm.chat_tools` (API key or offline)."""
-    settings = get_settings()
-    if settings.llm_backend == "ollama":
-        return OllamaToolLLM(
-            model=settings.ollama_model, host=settings.ollama_host
-        ).chat_tools(messages, tools)
+    """Kept for ribot/agent_loop.py: `llm.chat_tools` now does the Ollama routing itself."""
     return chat_tools(messages, tools)

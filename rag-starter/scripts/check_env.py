@@ -42,7 +42,7 @@ def main() -> None:
         if not a or len(a) != len(b) or not math.isfinite(score):
             raise RuntimeError("Embedding / cosine check failed.")
         print(f"Embedding + cosine: ok (similarity = {score:.2f})")
-        for name in ("numpy", "chromadb", "streamlit", "openai"):
+        for name in ("numpy", "chromadb", "openai"):
             found = importlib.util.find_spec(name) is not None
             print(f"optional '{name}': " + ("available (not imported)" if found else "not installed (fine until needed)"))
         print("\nAll core checks passed. You're ready!")

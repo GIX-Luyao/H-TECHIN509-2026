@@ -9,7 +9,6 @@ dependencies = [
     "python-dotenv>=1.0",
     "numpy>=1.26",
     "chromadb>=0.5",
-    "streamlit>=1.36",
 ]
 
 [project.optional-dependencies]

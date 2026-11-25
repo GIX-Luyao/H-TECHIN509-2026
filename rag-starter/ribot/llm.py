@@ -8,8 +8,9 @@ build by hand in Week 3) and returns the assistant's reply as a string.
 - Week 8: `chat_tools(messages, tools)` is the structured tool-calling twin — declared
   tool schemas in, a block-shaped assistant message out (see ribot/harness.py); offline
   it uses the equally deterministic `FakeToolLLM`.
-- Week 10 (opt-in): set `RIBOT_LLM=ollama` to talk to a local Ollama model instead —
-  same messages in, same string out, no data leaves your machine.
+- Week 8 (opt-in): set `RIBOT_LLM=ollama` to talk to a small local Ollama model instead —
+  same messages in, same string out, no data leaves your machine. `chat_tools` follows
+  the same switch (see ribot/ollama_tools.py).
 """
 
 from __future__ import annotations
@@ -20,7 +21,7 @@ import urllib.error
 import urllib.request
 from typing import Sequence
 
-from .config import get_settings
+from .config import DEFAULT_OLLAMA_MODEL, get_settings
 
 Message = dict[str, str]
 
@@ -225,7 +226,7 @@ class OllamaLLM:
     """Chat with a *local* model served by Ollama (https://ollama.com).
 
     Same interface as `FakeLLM`: `chat(messages)` in, reply string out. This is the
-    Week 10 "localize" path — the whole point is that `ribot` never needs to know which
+    Week 8 local-model path — the whole point is that `ribot` never needs to know which
     backend is answering. Nothing here is installed by default and nothing changes unless
     you opt in with `RIBOT_LLM=ollama` (or construct this class yourself).
 
@@ -235,15 +236,17 @@ class OllamaLLM:
 
     def __init__(
         self,
-        model: str = "llama3.2",
+        model: str = DEFAULT_OLLAMA_MODEL,
         host: str = "http://localhost:11434",
         temperature: float = 0.2,
         timeout: float = 120.0,
+        think: bool = False,
     ) -> None:
         self.model = model
         self.host = host.rstrip("/")
         self.temperature = temperature
         self.timeout = timeout
+        self.think = think  # False = answer directly, no reasoning pass
 
     def chat(self, messages: Sequence[Message]) -> str:
         payload = json.dumps(
@@ -251,6 +254,7 @@ class OllamaLLM:
                 "model": self.model,
                 "messages": list(messages),
                 "stream": False,
+                "think": self.think,  # top level, not in options
                 "options": {"temperature": self.temperature},
             }
         ).encode("utf-8")
@@ -281,12 +285,13 @@ def chat(messages: Sequence[Message], temperature: float = 0.2) -> str:
     """
     settings = get_settings()
 
-    # Opt-in local backend (Week 10): RIBOT_LLM=ollama. Default behavior is unchanged.
+    # Opt-in local backend (Week 8): RIBOT_LLM=ollama. Default behavior is unchanged.
     if settings.llm_backend == "ollama":
         return OllamaLLM(
             model=settings.ollama_model,
             host=settings.ollama_host,
             temperature=temperature,
+            think=settings.ollama_think,
         ).chat(messages)
 
     if not settings.has_key:
@@ -316,13 +321,23 @@ def chat_tools(
     run, a `text` block when it is answering. Your loop in ribot/harness.py decides
     what happens next; the model never runs anything itself.
 
-    - No API key -> the deterministic `FakeToolLLM` (also used for RIBOT_LLM=ollama:
-      the Week 10 local path speaks plain chat only, so tools stay offline there).
+    - RIBOT_LLM=ollama -> `OllamaToolLLM`: a local model genuinely chooses the tool.
+    - No API key -> the deterministic `FakeToolLLM`.
     - Real key -> the OpenAI-compatible tools API, converted to and from the same
       block shapes so the harness code is identical offline and live.
     """
     settings = get_settings()
-    if settings.llm_backend == "ollama" or not settings.has_key:
+    if settings.llm_backend == "ollama":
+        # Imported here because ollama_tools imports this module.
+        from .ollama_tools import OllamaToolLLM
+
+        return OllamaToolLLM(
+            model=settings.ollama_model,
+            host=settings.ollama_host,
+            temperature=temperature,
+            think=settings.ollama_think,
+        ).chat_tools(messages, tools)
+    if not settings.has_key:
         return FakeToolLLM().chat_tools(messages, tools)
 
     from openai import OpenAI

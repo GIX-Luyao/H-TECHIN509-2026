@@ -3,8 +3,8 @@
 This is the **one repository you grow all term**. In Week 1 it already runs a working assistant shell.
 Every week after, you replace a piece of "borrowed magic" with code you understand, until by
 **Demo Day (Week 9)** it is a Retrieval-Augmented Generation (RAG) personal assistant that answers
-**grounded, cited** questions over a safe work-library corpus and can be demoed locally or, when
-the data is synthetic/sanitized, at a public URL. In Week 10 you harden it into a take-away
+**grounded, cited** questions over a safe work-library corpus, as a terminal chat you can demo
+from a fresh clone of your repo. In Week 10 you harden it into a take-away
 professional assistant package: safe data posture, local-first roadmap, and a small markdown
 assistant-memory file.
 
@@ -23,6 +23,10 @@ Ollama model** and re-run your tests — see "Run it against a local model" belo
 ---
 
 ## Quick start (5 minutes)
+
+> **Week 10 on:** with a virtual environment active, `python scripts/quickstart.py` runs every
+> check below in order (install, `.env`, offline health check, model backend, tool menu, tests)
+> and stops at the first problem with the fix. `--run` starts the assistant when all pass.
 
 > **Anything below fail?** Go straight to [`SETUP_TROUBLESHOOTING.md`](SETUP_TROUBLESHOOTING.md) —
 > the known-failures guide (Windows/corporate machines first). Setup problems are never graded.
@@ -67,16 +71,16 @@ is in [`SETUP_TROUBLESHOOTING.md`](SETUP_TROUBLESHOOTING.md).
 
 | Week | You learn | File you build / use | Fallback if stuck |
 |------|-----------|----------------------|-------------------|
-| 1 | setup, Git, run an assistant | `ribot/chatbot.py`, `app.py` | `FakeLLM` (offline) |
+| 1 | setup, Git, run an assistant | `ribot/chatbot.py` | `FakeLLM` (offline) |
 | 2 | strings, f-strings → the assistant profile prompt | `ribot/prompts.py` | — |
 | 3 | lists, dicts, control flow → memory | `ribot/chatbot.py` (`ChatBot.history`) | reference `ChatBot` |
 | 4 | functions, `try/except`, JSON | `ribot/textprep.py` | reference functions |
 | 5 | embeddings + cosine similarity | `ribot/similarity.py`, `ribot/embeddings.py` | `fallback_embed()`, `data/embeddings_fixture.json` |
 | 6 | files, chunking, vector store → work library | `ribot/chunking.py`, `ribot/vectorstore.py`, `ribot/build_index.py` | `InMemoryStore`, sample docs |
-| 7 | classes + unit tests | `ribot/chatbot.py` classes, `tests/` | reference classes + sample tests |
+| 7 | classes + unit tests + memory limits + the `Tool` class | `ribot/chatbot.py` classes (`trim_history`, `resume`), `ribot/tools.py`, `tests/` | reference classes + sample tests |
 | 8 | tool schemas + a bounded agent harness | `ribot/harness.py` (on-ramp: `ribot/agent.py`) | the `SEARCH:` single-tool loop + sample corpus |
-| 9 | local/public demo day | `app.py`, `requirements.txt` | recorded demo video |
-| 10 | harden + localize + remember | `SECURITY.md`, `.env`, grounding guardrail, `assistant_memory.md` | triage-assigned single fix |
+| 9 | terminal demo day + fresh-clone check | `ribot/assistant.py`, `requirements.txt` | recorded demo video |
+| 10 | many tools, one loop; harden; ship | `ribot/my_tools.py`, `ribot/registry.py` (yours), `ribot/agent_loop.py`, `scripts/quickstart.py`, `SECURITY.md` | the starter toolbox + offline quick start |
 
 `starters/` holds **blanked** versions of key files (with `# TODO` lines) for the in-class
 faded exercises. The fully-worked code in `ribot/` is your **known-good reference**: if your own
@@ -96,7 +100,8 @@ rag-starter/
 │   ├── config.py          # loads settings + API key from .env
 │   ├── llm.py             # chat() — real OpenAI OR offline FakeLLM
 │   ├── prompts.py         # Week 2: assemble the prompt from strings
-│   ├── chatbot.py         # Week 1/3/7: ChatBot/PersonalAssistant + ConversationLogger
+│   ├── chatbot.py         # Week 1/3/7: ChatBot/PersonalAssistant + ConversationLogger (+ memory limits, resume)
+│   ├── tools.py           # Week 7: Tool + ToolResult — one tool = schema + function (run by harness.py)
 │   ├── textprep.py        # Week 4: clean_message, build_conv, export_to_json
 │   ├── similarity.py      # Week 5: cosine_similarity (pure-Python + NumPy)
 │   ├── embeddings.py      # Week 5: embed() + fallback_embed() + fixture
@@ -104,8 +109,9 @@ rag-starter/
 │   ├── vectorstore.py     # Week 6: Chroma OR pure-Python InMemoryStore
 │   ├── retriever.py       # Week 6: Retriever (embed → search → chunks)
 │   ├── build_index.py     # Week 6: load → chunk → embed → store
-│   └── agent.py           # Week 8: single-tool assistant loop
-├── app.py                 # Week 9: Streamlit UI for local/public demo
+│   ├── agent.py           # Week 8: single-tool assistant loop
+│   ├── harness.py         # Week 8: structured multi-tool agent loop (tools from tools.py)
+│   └── assistant.py       # Week 9: terminal chat loop for Demo Day
 ├── assistant_memory.md    # Week 10 stretch/final artifact: local markdown memory (student-created)
 ├── data/
 │   ├── sample_docs/       # synthetic, non-PII fallback corpus (office/HR flavor)
@@ -140,7 +146,7 @@ python -m ribot.chatbot          # Week 1/3: terminal assistant chat
 python -m ribot.build_index      # Week 6: build the document index
 python -m ribot.agent            # Week 8 on-ramp: text-protocol agent (SEARCH:)
 python -m ribot.harness          # Week 8 floor: structured two-tool harness
-streamlit run app.py             # Week 9: web UI
+python -m ribot.assistant        # Week 9: terminal assistant (Demo Day)
 pytest                           # Week 7: run the tests
 ```
 

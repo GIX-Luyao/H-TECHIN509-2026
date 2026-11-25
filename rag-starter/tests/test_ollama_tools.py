@@ -147,3 +147,59 @@ def test_router_uses_ollama_only_when_opted_in(monkeypatch):
         chat_tools_routed([{"role": "user", "content": "q"}], TOOLS)["content"]
         == "local"
     )
+
+
+def test_llm_chat_tools_routes_to_ollama_when_opted_in(monkeypatch):
+    # The Week 8 floor (ribot.harness) calls llm.chat_tools directly, so the opt-in
+    # switch must reach it too, not only chat_tools_routed.
+    from ribot.llm import chat_tools
+
+    monkeypatch.setenv("RIBOT_LLM", "ollama")
+    monkeypatch.setattr(
+        OllamaToolLLM,
+        "chat_tools",
+        lambda self, m, t: {"role": "assistant", "content": "local"},
+    )
+    assert chat_tools([{"role": "user", "content": "q"}], TOOLS)["content"] == "local"
+
+
+def test_default_ollama_model_is_small_and_tool_capable(monkeypatch):
+    from ribot.config import get_settings
+
+    monkeypatch.delenv("OLLAMA_MODEL", raising=False)
+    assert get_settings().ollama_model == "qwen3.5:2b"
+    assert OllamaToolLLM().model == "qwen3.5:2b"
+
+
+def _capture_tool_body(monkeypatch) -> dict:
+    sent: dict = {}
+
+    def fake_urlopen(request, timeout):
+        sent.update(json.loads(request.data))
+        return _FakeResponse(json.dumps({"message": {"content": "done"}}).encode())
+
+    monkeypatch.setattr(ollama_tools.urllib.request, "urlopen", fake_urlopen)
+    return sent
+
+
+def test_tool_calls_turn_thinking_off_by_default(monkeypatch):
+    sent = _capture_tool_body(monkeypatch)
+    OllamaToolLLM().chat_tools([{"role": "user", "content": "q"}], TOOLS)
+    assert sent["think"] is False
+    assert "think" not in sent["options"]
+
+
+def test_tool_calls_can_turn_thinking_on(monkeypatch):
+    sent = _capture_tool_body(monkeypatch)
+    OllamaToolLLM(think=True).chat_tools([{"role": "user", "content": "q"}], TOOLS)
+    assert sent["think"] is True
+
+
+def test_llm_chat_tools_passes_ollama_think_setting_through(monkeypatch):
+    from ribot.llm import chat_tools
+
+    sent = _capture_tool_body(monkeypatch)
+    monkeypatch.setenv("RIBOT_LLM", "ollama")
+    monkeypatch.setenv("OLLAMA_THINK", "true")
+    chat_tools([{"role": "user", "content": "q"}], TOOLS)
+    assert sent["think"] is True
